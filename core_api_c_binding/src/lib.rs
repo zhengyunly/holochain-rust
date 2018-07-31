@@ -9,7 +9,7 @@ use holochain_dna::Dna;
 use std::sync::Arc;
 
 use holochain_agent::Agent;
-use holochain_core::{logger::Logger, persister::SimplePersister};
+use holochain_core::{logger::Logger, persister::SimplePersist};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     let context = Arc::new(Context {
         agent,
         logger: Arc::new(Mutex::new(NullLogger {})),
-        persister: Arc::new(Mutex::new(SimplePersister::new())),
+        persister: Arc::new(Mutex::new(SimplePersist::new())),
     });
 
     assert!(!ptr.is_null());

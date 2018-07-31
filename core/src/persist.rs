@@ -2,17 +2,17 @@ use error::HolochainError;
 use state::State;
 
 /// trait that defines the persistence functionality that holochain_core requires
-pub trait Persister {
+pub trait Persist {
     fn save(&mut self, state: &State);
     fn load(&self) -> Result<Option<State>, HolochainError>;
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct SimplePersister {
+pub struct SimplePersist {
     state: Option<State>,
 }
 
-impl Persister for SimplePersister {
+impl Persist for SimplePersist {
     fn save(&mut self, state: &State) {
         self.state = Some(state.clone());
     }
@@ -21,9 +21,9 @@ impl Persister for SimplePersister {
     }
 }
 
-impl SimplePersister {
+impl SimplePersist {
     pub fn new() -> Self {
-        SimplePersister { state: None }
+        SimplePersist { state: None }
     }
 }
 
@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn can_instantiate() {
-        let store = SimplePersister::new();
+        let store = SimplePersist::new();
         match store.load() {
             Err(_) => assert!(false),
             Ok(state) => match state {
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn can_roundtrip() {
-        let mut store = SimplePersister::new();
+        let mut store = SimplePersist::new();
 
         let state = State::new();
 

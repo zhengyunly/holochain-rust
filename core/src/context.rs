@@ -1,7 +1,7 @@
 use error::HolochainError;
 use holochain_agent::Agent;
 use logger::Logger;
-use persister::Persister;
+use persist::Persist;
 use std::sync::{Arc, Mutex};
 
 /// Context holds those aspects of the outside world that a Holochain instance needs to operate
@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 pub struct Context {
     pub agent: Agent,
     pub logger: Arc<Mutex<Logger>>,
-    pub persister: Arc<Mutex<Persister>>,
+    pub persister: Arc<Mutex<Persist>>,
 }
 
 impl Context {

@@ -14,7 +14,7 @@
 //! use std::sync::{Arc, Mutex};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
-//! use holochain_core::persister::SimplePersister;
+//! use holochain_core::persister::SimplePersist;
 //!
 //! // instantiate a new app
 //!
@@ -27,7 +27,7 @@
 //! let context = Context {
 //!     agent: agent,
 //!     logger: Arc::new(Mutex::new(SimpleLogger {})),
-//!     persister: Arc::new(Mutex::new(SimplePersister::new())),
+//!     persister: Arc::new(Mutex::new(SimplePersist::new())),
 //! };
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -170,7 +170,7 @@ impl Holochain {
 mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
-    use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+    use holochain_core::{context::Context, logger::Logger, persister::SimplePersist};
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use std::{
         fmt,
@@ -203,7 +203,7 @@ mod tests {
             Arc::new(Context {
                 agent: agent,
                 logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
+                persister: Arc::new(Mutex::new(SimplePersist::new())),
             }),
             logger,
         )

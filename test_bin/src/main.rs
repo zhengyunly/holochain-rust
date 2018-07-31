@@ -4,7 +4,7 @@ extern crate holochain_core_api;
 extern crate holochain_dna;
 
 use holochain_agent::Agent;
-use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
+use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersist};
 use holochain_core_api::*;
 use holochain_dna::Dna;
 use std::{
@@ -36,7 +36,7 @@ fn main() {
     let context = Context {
         agent,
         logger: Arc::new(Mutex::new(SimpleLogger {})),
-        persister: Arc::new(Mutex::new(SimplePersister::new())),
+        persister: Arc::new(Mutex::new(SimplePersist::new())),
     };
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

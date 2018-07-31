@@ -26,5 +26,5 @@ pub mod instance;
 pub mod logger;
 pub mod network;
 pub mod nucleus;
-pub mod persister;
+pub mod persist;
 pub mod state;
