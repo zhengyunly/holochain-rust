@@ -3,7 +3,7 @@ pub mod actor;
 use actor::{AskSelf, Protocol};
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
-use hash_table::{entry::Entry, pair::Pair, HashTable};
+use hash_table::{entry::Entry, pair::Pair};
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
@@ -40,7 +40,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            self.table.pair(&h.to_string()).expect("getting from a table shouldn't fail")
+                            self.table.get_header(&h.to_string()).expect("getting from a table shouldn't fail")
                         });
         previous
     }

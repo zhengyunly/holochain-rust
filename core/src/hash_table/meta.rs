@@ -1,16 +1,17 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use hash::serializable_to_b58_hash;
-use hash_table::pair::Pair;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
+use hash_table::HashString;
+use hash_table::entry::Entry;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-/// PairMeta represents an extended form of EAV (entity-attribute-value) data
-/// E = the pair key for hash table lookups
+/// Meta represents an extended form of EAV (entity-attribute-value) data
+/// E = the entry key for hash table lookups
 /// A = the name of the meta attribute
 /// V = the value of the meta attribute
 /// txn = a unique (local to the source) monotonically increasing number that can be used for
@@ -18,8 +19,8 @@ use std::cmp::Ordering;
 ///       @see https://papers.radixdlt.com/tempo/#logical-clocks
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
-pub struct PairMeta {
-    pair_hash: String,
+pub struct EntryMeta {
+    entry_hash: HashString,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -31,10 +32,10 @@ pub struct PairMeta {
     // signature: String,
 }
 
-impl Ord for PairMeta {
-    fn cmp(&self, other: &PairMeta) -> Ordering {
-        // we want to sort by pair hash, then attribute name, then attribute value
-        match self.pair_hash.cmp(&other.pair_hash) {
+impl Ord for EntryMeta {
+    fn cmp(&self, other: &EntryMeta) -> Ordering {
+        // we want to sort by entry hash, then attribute name, then attribute value
+        match self.entry_hash.cmp(&other.entry_hash) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
                 Ordering::Greater => Ordering::Greater,
@@ -46,19 +47,19 @@ impl Ord for PairMeta {
     }
 }
 
-impl PartialOrd for PairMeta {
-    fn partial_cmp(&self, other: &PairMeta) -> Option<Ordering> {
+impl PartialOrd for EntryMeta {
+    fn partial_cmp(&self, other: &EntryMeta) -> Option<Ordering> {
         Some(self.cmp(&other))
     }
 }
 
-impl PairMeta {
-    /// Builds a new PairMeta from EAV and agent keys, where E is an existing Pair
+impl EntryMeta {
+    /// Builds a new Meta from EAV and agent keys, where E is an existing Entry
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
-    pub fn new(keys: &Keys, pair: &Pair, attribute: &str, value: &str) -> PairMeta {
-        PairMeta {
-            pair_hash: pair.key(),
+    pub fn new(keys: &Keys, entry: &Entry, attribute: &str, value: &str) -> EntryMeta {
+        EntryMeta {
+            entry_hash: entry.key(),
             attribute: attribute.into(),
             value: value.into(),
             source: keys.node_id(),
@@ -86,19 +87,19 @@ impl PairMeta {
     }
 }
 
-impl Key for PairMeta {
+impl Key for EntryMeta {
     fn key(&self) -> String {
         serializable_to_b58_hash(&self, Hash::SHA2256)
     }
 }
 
-impl ToJson for PairMeta {
+impl ToJson for EntryMeta {
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(serde_json::to_string(&self)?)
     }
 }
 
-impl FromJson for PairMeta {
+impl FromJson for EntryMeta {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     fn from_json(s: &str) -> Result<Self, HolochainError> {
@@ -106,7 +107,7 @@ impl FromJson for PairMeta {
     }
 }
 
-impl RoundTripJson for PairMeta {}
+impl RoundTripJson for EntryMeta {}
 
 #[cfg(test)]
 pub mod tests {
@@ -117,7 +118,7 @@ pub mod tests {
             tests::{test_pair, test_pair_a, test_pair_b},
             Pair,
         },
-        pair_meta::PairMeta,
+        entry_meta::EntryMeta,
     };
     use json::{FromJson, ToJson};
     use key::Key;
@@ -153,53 +154,53 @@ pub mod tests {
         "another value".into()
     }
 
-    pub fn test_pair_meta_for(pair: &Pair, attribute: &str, value: &str) -> PairMeta {
-        PairMeta::new(&test_keys(), pair, attribute, value)
+    pub fn test_entry_meta_for(pair: &Pair, attribute: &str, value: &str) -> EntryMeta {
+        EntryMeta::new(&test_keys(), pair, attribute, value)
     }
 
     /// returns dummy pair meta for testing
-    pub fn test_pair_meta() -> PairMeta {
-        test_pair_meta_for(&test_pair(), &test_attribute(), &test_value())
+    pub fn test_entry_meta() -> EntryMeta {
+        test_entry_meta_for(&test_pair(), &test_attribute(), &test_value())
     }
 
-    /// dummy pair meta, same as test_pair_meta()
-    pub fn test_pair_meta_a() -> PairMeta {
-        test_pair_meta()
+    /// dummy pair meta, same as test_entry_meta()
+    pub fn test_entry_meta_a() -> EntryMeta {
+        test_entry_meta()
     }
 
-    /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
-    pub fn test_pair_meta_b() -> PairMeta {
-        test_pair_meta_for(&test_pair(), &test_attribute_b(), &test_value_b())
+    /// returns dummy pair meta for testing against the same pair as test_entry_meta_a
+    pub fn test_entry_meta_b() -> EntryMeta {
+        test_entry_meta_for(&test_pair(), &test_attribute_b(), &test_value_b())
     }
 
     #[test]
-    /// smoke test PairMeta::new()
+    /// smoke test EntryMeta::new()
     fn new() {
-        test_pair_meta();
+        test_entry_meta();
     }
 
     #[test]
     /// test meta.pair()
     fn pair() {
-        assert_eq!(test_pair_meta().pair_hash(), test_pair().key());
+        assert_eq!(test_entry_meta().pair_hash(), test_pair().key());
     }
 
     #[test]
     /// test meta.attribute()
     fn attribute() {
-        assert_eq!(test_pair_meta().attribute(), test_attribute());
+        assert_eq!(test_entry_meta().attribute(), test_attribute());
     }
 
     #[test]
     /// test meta.value()
     fn value() {
-        assert_eq!(test_pair_meta().value(), test_value());
+        assert_eq!(test_entry_meta().value(), test_value());
     }
 
     #[test]
     /// test meta.source()
     fn source() {
-        assert_eq!(test_pair_meta().source(), test_keys().node_id());
+        assert_eq!(test_entry_meta().source(), test_keys().node_id());
     }
 
     #[test]
@@ -209,10 +210,10 @@ pub mod tests {
         let p2 = test_pair_b();
 
         // basic ordering
-        let m_1ax = PairMeta::new(&test_keys(), &p1, "a", "x");
-        let m_1ay = PairMeta::new(&test_keys(), &p1, "a", "y");
-        let m_1bx = PairMeta::new(&test_keys(), &p1, "b", "x");
-        let m_2ax = PairMeta::new(&test_keys(), &p2, "a", "x");
+        let m_1ax = EntryMeta::new(&test_keys(), &p1, "a", "x");
+        let m_1ay = EntryMeta::new(&test_keys(), &p1, "a", "y");
+        let m_1bx = EntryMeta::new(&test_keys(), &p1, "b", "x");
+        let m_2ax = EntryMeta::new(&test_keys(), &p2, "a", "x");
 
         // sort by pair key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
@@ -245,14 +246,14 @@ pub mod tests {
     #[test]
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
-        let pair_meta = test_pair_meta();
+        let entry_meta = test_entry_meta();
         let expected = "{\"pair_hash\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
 
-        assert_eq!(expected.to_string(), pair_meta.to_json().unwrap());
-        assert_eq!(pair_meta, PairMeta::from_json(&expected).unwrap());
+        assert_eq!(expected.to_string(), entry_meta.to_json().unwrap());
+        assert_eq!(entry_meta, EntryMeta::from_json(&expected).unwrap());
         assert_eq!(
-            pair_meta,
-            PairMeta::from_json(&pair_meta.to_json().unwrap()).unwrap()
+            entry_meta,
+            EntryMeta::from_json(&entry_meta.to_json().unwrap()).unwrap()
         );
     }
 }

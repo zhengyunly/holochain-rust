@@ -1,10 +1,12 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
+use hash_table::{pair::Pair, meta::EntryMeta};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
+use hash_table::entry::Entry;
+use hash_table::HashString;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
@@ -27,32 +29,40 @@ pub enum Protocol {
     Teardown,
     TeardownResult(Result<(), HolochainError>),
 
+    /// HashTable::get_entry()
+    GetEntry(HashString),
+    GetEntryResult(Result<Option<Entry>, HolochainError>),
+
+    /// HashTable::put_entry()
+    PutEntry(Entry),
+    PutEntryResult(Result<(), HolochainError>),
+
     /// HashTable::modify_entry()
-    ModifyPair {
+    ModifyEntry {
         keys: Keys,
-        old_pair: Pair,
-        new_pair: Pair,
+        old_entry: Entry,
+        new_entry: Entry,
     },
-    ModifyPairResult(Result<(), HolochainError>),
+    ModifyEntryResult(Result<(), HolochainError>),
 
-    /// HashTable::retract_pair()
-    RetractPair {
+    /// HashTable::retract_entry()
+    RetractEntry {
         keys: Keys,
-        pair: Pair,
+        entry: Entry,
     },
-    RetractPairResult(Result<(), HolochainError>),
+    RetractEntryResult(Result<(), HolochainError>),
 
-    /// HashTable::assert_meta()
-    AssertMeta(PairMeta),
-    AssertMetaResult(Result<(), HolochainError>),
+    /// HashTable::assert_entry_meta()
+    AssertEntryMeta(EntryMeta),
+    AssertEntryMetaResult(Result<(), HolochainError>),
 
-    /// HashTable::pair_meta()
-    GetPairMeta(String),
-    GetPairMetaResult(Result<Option<PairMeta>, HolochainError>),
+    /// HashTable::entry_meta()
+    GetEntryMeta(String),
+    GetEntryMetaResult(Result<Option<EntryMeta>, HolochainError>),
 
-    /// HashTable::all_metas_for_pair()
-    GetMetasForPair(Pair),
-    GetMetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
+    /// HashTable::metas_for_entry()
+    GetMetasForEntry(Pair),
+    GetMetasForEntryResult(Result<Vec<EntryMeta>, HolochainError>),
 
     /// HashTable::pair()
     GetPair(String),

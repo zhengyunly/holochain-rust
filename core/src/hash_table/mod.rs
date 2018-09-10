@@ -3,7 +3,7 @@ pub mod entry;
 pub mod file;
 pub mod memory;
 pub mod pair;
-pub mod pair_meta;
+pub mod meta;
 pub mod status;
 pub mod sys_entry;
 #[cfg(test)]
@@ -12,11 +12,11 @@ pub mod test_util;
 use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{
-    pair::Pair,
-    pair_meta::PairMeta,
+    meta::EntryMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
+use hash_table::entry::Entry;
 
 pub type HashString = String;
 
@@ -35,53 +35,53 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     }
 
     // crud
-    /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
-    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError>;
+    /// add a Entry to the HashTable, analogous to chain.push() but ordering is not enforced
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError>;
 
-    /// lookup a Pair from the HashTable by Pair/Header key
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError>;
+    /// lookup a Entry from the HashTable by Entry key
+    fn get_entry(&self, key: &str) -> Result<Option<Entry>, HolochainError>;
 
-    /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
-    fn modify_pair(
+    /// add a new Entry to the HashTable as per commit and status link an old Entry as MODIFIED
+    fn modify_entry(
         &mut self,
         keys: &Keys,
-        old_pair: &Pair,
-        new_pair: &Pair,
+        old_entry: &Entry,
+        new_entry: &Entry,
     ) -> Result<(), HolochainError> {
-        self.put_pair(new_pair)?;
+        self.put_entry(new_entry)?;
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(&PairMeta::new(
+        self.assert_entry_meta(&EntryMeta::new(
             keys,
-            &old_pair,
+            &old_entry,
             STATUS_NAME,
             &CrudStatus::MODIFIED.bits().to_string(),
         ))?;
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
+        self.assert_entry_meta(&EntryMeta::new(keys, &old_entry, LINK_NAME, &new_entry.key()))
     }
 
     /// set the status of a Pair to DELETED
-    fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        self.assert_pair_meta(&PairMeta::new(
+    fn retract_entry(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+        self.assert_entry_meta(&EntryMeta::new(
             keys,
-            &pair,
+            &entry,
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         ))
     }
 
     // meta
-    /// assert a given PairMeta in the HashTable
-    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+    /// assert a given EntryMeta in the HashTable
+    fn assert_entry_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError>;
 
-    /// lookup a PairMeta from the HashTable by PairMeta key
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
-    /// lookup all PairMeta for a given Pair
-    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError>;
+    /// lookup a EntryMeta from the HashTable by EntryMeta key
+    fn entry_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError>;
+    /// lookup all EntryMeta for a given Entry
+    fn metas_for_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError>;
 
     // query
     // @TODO how should we handle queries?

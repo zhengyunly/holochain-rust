@@ -1,9 +1,10 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use hash_table::{meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
+use hash_table::entry::Entry;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
@@ -22,51 +23,51 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
-    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::PutPair(pair.clone()));
-        unwrap_to!(response => Protocol::PutPairResult).clone()
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::PutEntry(entry.clone()));
+        unwrap_to!(response => Protocol::PutEntryResult).clone()
     }
 
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPair(key.to_string()));
-        unwrap_to!(response => Protocol::GetPairResult).clone()
+    fn get_entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetEntry(key.to_string()));
+        unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
 
-    fn modify_pair(
+    fn modify_entry(
         &mut self,
         keys: &Keys,
-        old_pair: &Pair,
-        new_pair: &Pair,
+        old_entry: &Entry,
+        new_entry: &Entry,
     ) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::ModifyPair {
+        let response = self.block_on_ask(Protocol::ModifyEntry {
             keys: keys.clone(),
-            old_pair: old_pair.clone(),
-            new_pair: new_pair.clone(),
+            old_entry: old_entry.clone(),
+            new_entry: new_entry.clone(),
         });
-        unwrap_to!(response => Protocol::ModifyPairResult).clone()
+        unwrap_to!(response => Protocol::ModifyEntryResult).clone()
     }
 
-    fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::RetractPair {
+    fn retract_entry(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::RetractEntry {
             keys: keys.clone(),
-            pair: pair.clone(),
+            entry: entry.clone(),
         });
-        unwrap_to!(response => Protocol::RetractPairResult).clone()
+        unwrap_to!(response => Protocol::RetractEntryResult).clone()
     }
 
-    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+    fn assert_entry_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPairMeta(key.to_string()));
-        unwrap_to!(response => Protocol::GetPairMetaResult).clone()
+    fn entry_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetEntryMeta(key.to_string()));
+        unwrap_to!(response => Protocol::GetEntryMetaResult).clone()
     }
 
-    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetMetasForPair(pair.clone()));
-        unwrap_to!(response => Protocol::GetMetasForPairResult).clone()
+    fn metas_for_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetMetasForEntry(entry.clone()));
+        unwrap_to!(response => Protocol::GetMetasForEntryResult).clone()
     }
 }
 
@@ -130,19 +131,19 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         self.table.modify_pair(&keys, &old_pair, &new_pair),
                     ),
                     Protocol::RetractPair { keys, pair } => {
-                        Protocol::RetractPairResult(self.table.retract_pair(&keys, &pair))
+                        Protocol::RetractPairResult(self.table.retract_entry(&keys, &pair))
                     }
 
-                    Protocol::AssertMeta(pair_meta) => {
-                        Protocol::AssertMetaResult(self.table.assert_pair_meta(&pair_meta))
+                    Protocol::AssertMeta(entry_meta) => {
+                        Protocol::AssertMetaResult(self.table.assert_entry_meta(&entry_meta))
                     }
 
-                    Protocol::GetPairMeta(key) => {
-                        Protocol::GetPairMetaResult(self.table.pair_meta(&key))
+                    Protocol::GetEntryMeta(key) => {
+                        Protocol::GetEntryMetaResult(self.table.entry_meta(&key))
                     }
 
                     Protocol::GetMetasForPair(pair) => {
-                        Protocol::GetMetasForPairResult(self.table.metas_for_pair(&pair))
+                        Protocol::GetMetasForPairResult(self.table.metas_for_entry(&pair))
                     }
 
                     _ => unreachable!(),
