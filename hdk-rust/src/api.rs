@@ -3,6 +3,7 @@ use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
+        call::{CallArgs},
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
         get_links::{GetLinksArgs, GetLinksResult},
@@ -12,6 +13,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 //--------------------------------------------------------------------------------------------------
@@ -155,14 +157,59 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
     Ok(())
 }
 
+fn ffi_call<'r, A: Serialize, R: Deserialize<'r>>(
+    hc_fn: unsafe extern "C" fn(u32) -> u32,
+    input: A
+) -> ZomeApiResult<R> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
+    if let Err(err_code) = maybe_allocation_of_input {
+        return Err(ZomeApiError::Internal(err_code.to_string()));
+    }
+    let allocation_of_input = maybe_allocation_of_input.unwrap();
+
+    // Call WASMI-able commit
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_fn(allocation_of_input.encode() as u32);
+    }
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result = load_json(encoded_allocation_of_result as u32);
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+
+    if let Err(err_str) = result {
+        return Err(ZomeApiError::Internal(err_str));
+    };
+    Ok(result.unwrap())
+}
+
+
 /// Not Yet Available
 pub fn call<S: Into<String>>(
     _zome_name: S,
     _cap_name: S,
-    _function_name: S,
-    _arguments: serde_json::Value,
+    _fn_name: S,
+    _fn_args: serde_json::Value,
 ) -> ZomeApiResult<serde_json::Value> {
-    Err(ZomeApiError::FunctionNotImplemented)
+    let input = CallArgs {
+        zome_name: _zome_name.into(),
+        cap_name: _cap_name.into(),
+        fn_name: _fn_name.into(),
+        fn_args: _fn_args.to_string(),
+    };
+    let maybe_result: ZomeApiResult<serde_json::Value>;
+    unsafe {
+        maybe_result = ffi_call(hc_call, input);
+        println!("RESULT: {:?}", maybe_result);
+    }
+    maybe_result
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -340,9 +387,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
-/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
-/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function `link_entries`.
+/// Not Yet Available
 pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
