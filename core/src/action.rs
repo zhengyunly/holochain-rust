@@ -4,7 +4,6 @@ use holochain_core_types::{
     cas::content::Address, entry::Entry, error::HolochainError, links_entry::Link,
     validation::ValidationPackage,
 };
-use holochain_dna::Dna;
 use nucleus::{
     state::{NucleusState, ValidationResult},
     ExecuteZomeFnResponse, ZomeFnCall,

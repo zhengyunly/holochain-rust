@@ -1,6 +1,5 @@
 use cas::content::Address;
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{Entry, entry_type::EntryType};
 use error::HolochainError;
 use json::JsonString;
 use std::convert::TryInto;

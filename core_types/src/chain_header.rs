@@ -1,6 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry, Entry, ToEntry};
-use entry_type::{test_entry_type, EntryType};
+use entry::{test_entry, Entry, entry_type::test_entry_type, entry_type::EntryType};
 use error::HolochainError;
 use json::JsonString;
 use signature::{test_signature, Signature};
@@ -91,18 +90,6 @@ impl ChainHeader {
     /// entry_signature getter
     pub fn entry_signature(&self) -> &Signature {
         &self.entry_signature
-    }
-}
-
-//
-impl ToEntry for ChainHeader {
-    fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::ChainHeader, self.to_owned())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        ChainHeader::try_from(entry.value().to_owned())
-            .expect("could not deserialize ChainHeader from Entry")
     }
 }
 

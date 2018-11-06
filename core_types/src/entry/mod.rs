@@ -1,8 +1,4 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry_type::{
-    test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
-    EntryType,
-};
 use error::{error::HcResult, HolochainError};
 use json::{JsonString, RawString, *};
 use snowflake;
@@ -10,41 +6,47 @@ use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
 };
+use entry::entry_type::EntryType;
+use holochain_dna::Dna;
 
-pub type EntryValue = JsonString;
+pub mod entry_type;
+pub mod dna;
+
+pub type AppEntryValue = JsonString;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
-#[derive(Clone, Debug)]
-pub struct Entry {
-    value: EntryValue,
-    entry_type: EntryType,
+#[derive(Clone, Debug, DefaultJson)]
+pub enum Entry {
+    Dna(Dna),
+
+    AgentId(AgentId),
+    App(AppEntryType, AppEntryValue),
+
+    Delete(Delete),
+
+    LinkAdd(LinkAdd),
+    LinkRemove(LinkRemove),
+    LinkList(LinkList),
+
+    ChainHeader(ChainHeader),
+    ChainMigrate(ChainMigrate),
 }
 
 impl Entry {
-    pub fn new<J: Into<JsonString>>(entry_type: EntryType, value: J) -> Entry {
-        Entry {
-            entry_type,
-            value: value.into(),
+    pub fn entry_type(&self) -> EntryType {
+        match self {
+            Entry::Dna(_) => EntryType::Dna,
+            Entry::AgentId(_) => EntryType::AgentId,
+            Entry::App(app_entry_type, _) => EntryType::App(app_entry_type.to_owned()),
+            Entry::Delete(_) => EntryType::Delete,
+            Entry::LinkAdd(_) => EntryType::LinkAdd,
+            Entry::LinkRemove(_) => EntryType::LinkRemove,
+            Entry::LinkList(_) => EntryType::LinkList,
+            Entry::ChainHeader(_) => EntryType::ChainHeader,
+            Entry::ChainMigrate(_) => EntryType::ChainMigrate,
         }
     }
-
-    pub fn value(&self) -> &Content {
-        &self.value
-    }
-
-    pub fn entry_type(&self) -> &EntryType {
-        &self.entry_type
-    }
-
-    pub fn serialize(&self) -> SerializedEntry {
-        SerializedEntry::from(self.clone())
-    }
-}
-
-pub trait ToEntry {
-    fn to_entry(&self) -> Entry;
-    fn from_entry(&Entry) -> Self;
 }
 
 impl PartialEq for Entry {
@@ -53,90 +55,14 @@ impl PartialEq for Entry {
     }
 }
 
-/// entries are double serialized!
-/// this struct facilitates the outer serialization
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct SerializedEntry {
-    value: String,
-    entry_type: String,
-}
-
-impl SerializedEntry {
-    pub fn new(entry_type: &str, value: &str) -> SerializedEntry {
-        SerializedEntry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
-        }
-    }
-
-    pub fn value(&self) -> String {
-        self.value.clone()
-    }
-
-    pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
-    }
-
-    pub fn deserialize(&self) -> Entry {
-        Entry::from(self.clone())
-    }
-}
-
-// converting an Entry to SerializedEntry can never fail because it simply converts the fields
-// to strings
-impl From<Entry> for SerializedEntry {
-    fn from(entry: Entry) -> SerializedEntry {
-        SerializedEntry {
-            value: String::from(entry.value()),
-            entry_type: String::from(entry.entry_type().to_owned()),
-        }
-    }
-}
-
-impl From<SerializedEntry> for Entry {
-    fn from(serialized_entry: SerializedEntry) -> Entry {
-        Entry {
-            value: JsonString::from(serialized_entry.value),
-            entry_type: EntryType::from(serialized_entry.entry_type),
-        }
-    }
-}
-
-impl From<Option<SerializedEntry>> for JsonString {
-    fn from(v: Option<SerializedEntry>) -> JsonString {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for Option<SerializedEntry> {
-    type Error = HolochainError;
-    fn try_from(json_string: JsonString) -> HcResult<Self> {
-        default_try_from_json(json_string)
-    }
-}
-
 impl AddressableContent for Entry {
-    fn content(&self) -> Content {
-        self.serialize().content()
-    }
-
-    fn from_content(content: &Content) -> Self {
-        SerializedEntry::try_from(content.to_owned())
-            .expect("failed to restore Entry content")
-            .into()
-    }
-}
-
-impl AddressableContent for SerializedEntry {
     fn content(&self) -> Content {
         self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        content
-            .to_owned()
-            .try_into()
-            .expect("failed to deserialize SerializedEntry from Content")
+        content.to_owned().try_into()
+            .expect("failed to restore Entry content")
     }
 }
 
@@ -185,13 +111,6 @@ pub fn test_sys_entry_value() -> JsonString {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
     Entry::new(test_entry_type(), test_entry_value())
-}
-
-pub fn test_serialized_entry() -> SerializedEntry {
-    SerializedEntry {
-        value: String::from(test_entry_value()),
-        entry_type: String::from(test_entry_type()),
-    }
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {

@@ -42,8 +42,6 @@ pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    entry::{Entry, ToEntry},
-    entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
 };
@@ -229,21 +227,6 @@ impl PartialEq for Dna {
     fn eq(&self, other: &Dna) -> bool {
         // need to guarantee that PartialEq and Hash always agree
         JsonString::from(self.to_owned()) == JsonString::from(other.to_owned())
-    }
-}
-
-impl ToEntry for Dna {
-    fn to_entry(&self) -> Entry {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(EntryType::Dna, self.to_owned())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        entry
-            .value()
-            .to_owned()
-            .try_into()
-            .expect("could not convert Entry into Dna")
     }
 }
 
