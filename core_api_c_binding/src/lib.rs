@@ -3,7 +3,6 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate holochain_net;
 
 use holochain_cas_implementations::{
@@ -11,9 +10,7 @@ use holochain_cas_implementations::{
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::{error::HolochainError, json::JsonString};
-
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use holochain_net::p2p_network::P2pNetwork;
 use std::sync::Arc;
 
