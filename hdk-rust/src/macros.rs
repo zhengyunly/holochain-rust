@@ -55,7 +55,7 @@ macro_rules! load_json {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 ///
@@ -67,13 +67,13 @@ macro_rules! load_json {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> ZomeApiResult<Address> {
+/// fn handle_post_address(content: String) -> ZomeApiResult<Address> {
 ///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     });
 ///
-///     hdk::hash_entry(&post_entry)
+///     hdk::entry_address(&post_entry)
 /// }
 ///
 /// define_zome! {
@@ -110,7 +110,7 @@ macro_rules! load_json {
 ///             hash_post: {
 ///                 inputs: |content: String|,
 ///                 outputs: |post_address: ZomeApiResult<Address>|,
-///                 handler: handle_hash_post
+///                 handler: handle_post_address
 ///             }
 ///         }
 ///     }
